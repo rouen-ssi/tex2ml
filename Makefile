@@ -10,7 +10,7 @@ $(EXEC): $(SRC)/$(EXEC).yy.c $(SRC)/$(EXEC).tab.c
 	
 # Bison
 $(SRC)/$(EXEC).tab.c: $(SRC)/$(EXEC).y
-	bison $< -o $@ -v
+	bison $< -o $@ -d
 
 # Flex
 $(SRC)/$(EXEC).yy.c: $(SRC)/$(EXEC).l
