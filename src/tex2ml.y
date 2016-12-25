@@ -18,6 +18,8 @@
 #define MFRAC_CLOSE "</mfrac>"
 #define MSUP_OPEN   "<msup>"
 #define MSUP_CLOSE  "</msup>"
+#define MUO_OPEN    "<munderover>"
+#define MUO_CLOSE   "</munderover>"
 
 int yylex(void);
 void yyerror(char *);
@@ -25,13 +27,21 @@ void yyerror(char *);
 char mathml[100000];
 %}
 
-%token SQRT OPEN_BRACE CLOSE_BRACE CHAR NUM OP POW FRAC
+%token SQRT
+%token OPEN_BRACE
+%token CLOSE_BRACE
+%token CHAR
+%token NUM
+%token OP
+%token POW
+%token FRAC
+%token SUM
 
 %start statement
 
 %%
 statement:
-	expr { printf("<math>%s</math>\n", mathml); };
+	expr { printf("<math display=\"block\">%s</math>\n", mathml); };
 
 expr:
 	expr identifier
@@ -39,6 +49,7 @@ expr:
 	| expr operator
 	| expr sqrt
 	| expr frac
+	| expr sum
 	|
 ;
 
@@ -57,6 +68,26 @@ frac:
 	OPEN_BRACE { strcat(mathml, MROW_OPEN); }
 	expr { strcat(mathml, MROW_CLOSE); }
 	CLOSE_BRACE { strcat(mathml, MFRAC_CLOSE); }
+;
+
+sum:
+	SUM
+	OPEN_BRACE {
+		strcat(mathml, MUO_OPEN);
+		strcat(mathml, $1);
+		strcat(mathml, MROW_OPEN); }
+	expr {
+		strcat(mathml, MROW_CLOSE);
+	}
+	CLOSE_BRACE
+	POW
+	OPEN_BRACE {
+		strcat(mathml, MROW_OPEN);
+	} expr {
+		strcat(mathml, MROW_CLOSE);
+		strcat(mathml, MUO_CLOSE);
+	}
+	CLOSE_BRACE
 ;
 
 numeric:

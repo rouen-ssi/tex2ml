@@ -2,3 +2,4 @@ bin/
 src/tex2ml.tab.c
 src/tex2ml.tab.h
 src/tex2ml.yy.c
+src/tex2ml.output
