@@ -1,0 +1,115 @@
+\documentclass{article}
+\usepackage[utf8]{inputenc}
+\usepackage[french]{babel}
+\usepackage{dirtree}
+\usepackage[a4paper, total={6in, 8in}]{geometry}
+
+\DTsetlength{.2em}{1em}{.2em}{.4pt}{0}
+
+\title{Projet de Compilation}
+\author{Mathieu \textsc{Brochard} \\ Antoine \textsc{Chauvin}}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\section{Introduction}
+Ce projet consiste à réaliser un compilateur capable de traduire une expression mathématique écrite en \LaTeX\ vers un flux MathML. Cette application reprend les notions de compilation vues en cours et utilise les outils Flex et Bison vus en travaux pratiques. Ce traducteur, appelé TeX2ML, se présente sous la forme d'un exécutable prenant une expression \LaTeX\ en argument et écrit le flux MathML sur la sortie standard. Cela rend l'exécutable facilement utilisable par un CGI web, par exemple.
+
+\subsection*{Exemple}
+\verb|tex2ml "\frac{-b*4ac}{\sqrt{b+4ac}}"| produira le flux MathML :
+\begin{verbatim}
+<math display="block">
+    <mfrac>
+        <mrow>
+            <mo>-</mo>
+            <mi>b</mi>
+            <mn>4</mn>
+            <mi>a</mi>
+            <mi>c</mi>
+        </mrow>
+        <mrow>
+            <msqrt>
+                <mrow>
+                    <mi>b</mi>
+                    <mo>+</mo>
+                    <mn>4</mn>
+                    <mi>a</mi>
+                    <mi>c</mi>
+                </mrow>
+            </msqrt>
+        </mrow>
+    </mfrac>
+</math>    
+\end{verbatim}
+
+Ce qui, dans un navigateur adapté, produira ce résultat :
+{\Large$$\frac{-b*4ac}{\sqrt{b+4ac}}$$}
+A noter que l'expression \LaTeX\ fournie à l'exécutable doit obligatoirement être entourée de guillemets droits pour éviter à l'interpréteur de commandes d'échapper certains caractères à cause de la barre oblique.
+
+\section{Usage}
+Le projet est architecturé ainsi :
+\vspace{.2cm}
+\dirtree{%
+    .1 /.
+    .2 src.
+    .3 tex2ml.l.
+    .3 tex2ml.y.
+    .2 bin.
+    .3 tex2ml.
+    .2 README.md.
+    .2 LICENSE.
+    .2 Makefile.
+}
+\vspace{.2cm}
+Le répertoire \verb|src/| contient les sources de l'analyseur lexical (\verb|tex2ml.l|) et les sources de l'analyseur syntaxique (\verb|tex2ml.y|). Lors de la compilation, l'executable \verb|tex2ml| sera placé dans le répertoire \verb|bin/|.\\
+
+Pour compiler le projet, exécutez le \verb|Makefile| avec la commande \verb|make|. Ensuite, lancez le programme \verb|tex2ml| situé dans le répertoire \verb|bin|.
+Le programme attend un argument qui est l'expression \LaTeX\ à traduire qui doit obligatoirement être entre guillemets droits. Le programme retournera le flux MathML sur la sortie standard. Vous pourrez rediriger ce flux à votre gise (dans un fichier, par exemple). 
+
+\section{Analyseur lexical}
+Tout d'abord, ce compilateur se compose d'un analyseur lexical écrit avec Flex. Son rôle est de lire l'expression \LaTeX\ et de la découper en \textit{tokens}. Une expression comporte plusieurs types d'éléments comme les \textit{identifiers} ($a$, $b$, $c$, ...), les \textit{numbers} ($1$, $2$, $3$, ...) mais aussi des symboles spéciaux comme les fractions (\verb|\frac|) ou encore les racines carrées (\verb|\sqrt|).\\
+
+On utilise donc des expressions rationnelles pour reconnaître ces motifs. Par exemple, pour reconnaître un \textit{identifiers}, nous utilisons l'expression rationnelle \verb|[a-zA-Z]|. Quand l'analyseur lexical reconnaît ce motif, il informe l'analyseur syntaxique que le prochain \textit{token} est un \textit{identifier} et sa valeur et $a$, par exemple.
+\clearpage
+
+\subsection*{Exemple}
+Pour reconnaître un \textit{identifier} :
+\begin{verbatim}
+[a-zA-Z] { yylval = strdup(yytext); return CHAR; }
+\end{verbatim}
+Lorsque l'analyseur lexical reconnaît un \textit{identifier}, il stocke sa valeur ($a$, $b$, ...) dans la table d'analyse et renvoie la constante \verb|CHAR|. Cette constance sera utilisée par l'analyseur syntaxique pour qu'il sache que le \textit{token} courant est un \textit{identifier}.\\
+A noter que l'on utilise la fonction \verb|strdup| qui permet de dupliquer une chaîne de caractères. En effet, on ne peut se contenter d'assigner à \verb|yylval| un pointeur, car celui-ci change à chaque \textit{token} lu, nous perdrion sa valeur.
+
+\section{Analyseur syntaxique}
+L'analyseur syntaxique va permettre de vérifier la validité syntaxique de l'expression fournie. Par exemple, le \textit{token} \verb|\sqrt| doit toujours être suivi d'une accolade ouvrante, d'une expression et d'une accolade fermante. De plus, il va effectuer certaines actions qui permettront de traiter l'aspect sémantique de l'expression. Par exemple, quand l'analyseur syntaxique lira un nombre, il effectuera l'action qui consiste a entourer le nombre par des balises \verb|<mn></mn>|.
+
+\subsection*{Exemple}
+Prenons l'expression \verb|\sqrt{2a}|. L'analyseur syntaxique lit le premier \textit{token} qui correspond à la constante \verb|SQRT|. Il utilise donc cette grammaire :
+\begin{verbatim}
+expr:
+    expr identifier
+    | expr numeric
+    |
+;
+
+sqrt:
+    SQRT        { strcat(mathml, MSQRT_OPEN);  }
+    OPEN_BRACE  { strcat(mathml, MROW_OPEN);   }
+    expr        { strcat(mathml, MROW_CLOSE);  }
+    CLOSE_BRACE { strcat(mathml, MSQRT_CLOSE); }
+;
+\end{verbatim}
+L'analyseur syntaxique stocke dans une chaîne de caractères la balise \verb|<msqrt>| suivi de la balise \verb|<mrow>|. Dans ces balises, il va analyser l'expression \verb|2a|, et l'entourer des balises \verb|<mn></mn>| et \verb|<mi></mi>|. Il stocke cette expression à l'intérieur de la balise \verb|<mrow>|. Ensuite, il ferme la balise \verb|<mrow>| et \verb|<msqrt>|. L'expression MathML sera donc :
+\begin{verbatim}
+<msqrt>
+    <mrow>
+        <mn>2</mn>
+        <mi>a</mi>
+    </mrow>
+</msqrt>
+\end{verbatim}
+A noter que la grammaire a été très simplifiée pour l'exemple.
+
+\end{document}
