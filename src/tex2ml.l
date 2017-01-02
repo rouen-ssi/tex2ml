@@ -14,6 +14,14 @@ int yyparse(void);
 \\sqrt          return SQRT;
 \\sum_          { yylval = "<mo>&sum;</mo>"; return SEQ; }
 \\prod_			{ yylval = "<mo>&prod;</mo>"; return SEQ; }
+\\pm			{ yylval = "&plusmn;"; return OP; }
+\\mp			{ yylval = "&#x2213;"; return OP; }
+\\cap           { yylval = "&cap;"; return OP; }
+\\cup           { yylval = "&cup;"; return OP; }
+\\subset        { yylval = "&sub;"; return OP; }
+\\subseteq      { yylval = "&sube;"; return OP; }
+\\supset        { yylval = "&sup;"; return OP; }
+\\supseteq      { yylval = "&supe;"; return OP; }
 \{              return OPEN_BRACE;
 \}              return CLOSE_BRACE;
 \+|\-|\=        { yylval = strdup(yytext); return OP; }
