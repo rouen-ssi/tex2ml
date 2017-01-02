@@ -17,4 +17,4 @@ $(SRC)/$(EXEC).yy.c: $(SRC)/$(EXEC).l
 	flex -o $@ $<
 
 clean:
-	rm -rf $(SRC)/$(EXEC).yy.c $(SRC)/$(EXEC).tab.*
+	rm -rf $(SRC)/$(EXEC).yy.c $(SRC)/$(EXEC).tab.* $(SRC)/$(EXEC).output
