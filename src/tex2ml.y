@@ -35,7 +35,7 @@ char mathml[100000];
 %token OP
 %token POW
 %token FRAC
-%token SUM
+%token SEQ
 
 %start statement
 
@@ -49,7 +49,7 @@ expr:
 	| expr operator
 	| expr sqrt
 	| expr frac
-	| expr sum
+	| expr sequences
 	|
 ;
 
@@ -70,8 +70,8 @@ frac:
 	CLOSE_BRACE { strcat(mathml, MFRAC_CLOSE); }
 ;
 
-sum:
-	SUM
+sequences:
+	SEQ
 	OPEN_BRACE {
 		strcat(mathml, MUO_OPEN);
 		strcat(mathml, $1);

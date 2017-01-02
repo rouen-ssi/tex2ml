@@ -12,7 +12,8 @@ int yyparse(void);
 [a-zA-Z]        { yylval = strdup(yytext); return CHAR; }
 \\frac          return FRAC;
 \\sqrt          return SQRT;
-\\sum_          { yylval = "<mo>&sum;</mo>"; return SUM; }
+\\sum_          { yylval = "<mo>&sum;</mo>"; return SEQ; }
+\\prod_			{ yylval = "<mo>&prod;</mo>"; return SEQ; }
 \{              return OPEN_BRACE;
 \}              return CLOSE_BRACE;
 \+|\-|\=        { yylval = strdup(yytext); return OP; }
