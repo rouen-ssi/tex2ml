@@ -19,3 +19,4 @@ The LaTeX expression **must** be quoted. The program gives the corresponding Mat
 - Operators (+, -, *, =, ...)
 - Fractions
 - Square roots
+- Summation symbols
